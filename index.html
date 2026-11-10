@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Central de Acesso CDF - Login</title>
+<!-- SDK Oficial do Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0a2a66 0%, #1565c0 50%, #2196f3 100%);
+    padding: 20px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .fundo-tracos {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .traco {
+    position: absolute;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    height: 2px;
+    width: 300px;
+    border-radius: 50%;
+    filter: drop-shadow(0 0 8px #ffffff);
+    animation: moverTraco 6s infinite ease-in-out;
+  }
+
+  @keyframes moverTraco {
+    0% { opacity: 0; transform: translateX(-150px) scaleX(0.5); }
+    50% { opacity: 0.7; transform: translateX(50vw) scaleX(1.2); }
+    100% { opacity: 0; transform: translateX(100vw) scaleX(0.5); }
+  }
+
+  .grid-linhas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  .layout-geral {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    width: 100%;
+    max-width: 1400px;
+    height: 100vh;
+    position: relative;
+    z-index: 1;
+  }
+
+  .coluna-efeitos {
+    flex: 1;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .item-texto-flutuante {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8px 12px;
+    opacity: 0;
+    animation: aparecerFlutuarTexto 8s infinite ease-in-out;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+    white-space: nowrap;
+  }
+
+  .item-texto-flutuante .cabecalho-texto {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .item-texto-flutuante .sub-texto {
+    font-size: 11px;
+    font-weight: 600;
+    opacity: 0.9;
+    margin-top: 3px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding-left: 28px;
+  }
+
+  @keyframes aparecerFlutuarTexto {
+    0% { opacity: 0; transform: translateY(35px) scale(0.85); }
+    20% { opacity: 1; transform: translateY(0) scale(1); }
+    80% { opacity: 1; transform: translateY(-25px) scale(1); }
+    100% { opacity: 0; transform: translateY(-60px) scale(0.9); }
+  }
+
+  .caixa-login {
+    width: 100%;
+    max-width: 420px;
+    max-height: 96vh;
+    overflow-y: auto;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
+    animation: aparecerCentro 0.6s ease;
+    z-index: 100;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  @keyframes aparecerCentro {
+    from { opacity: 0; transform: translateY(25px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .topo {
+    background: linear-gradient(135deg, #0d47a1, #1976d2);
+    padding: 32px 24px;
+    text-align: center;
+    color: #fff;
+  }
+
+  .topo .icone {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+  }
+
+  .topo h1 { font-size: 22px; letter-spacing: 1px; font-weight: 600; }
+  .topo p { font-size: 13px; opacity: 0.85; margin-top: 6px; }
+
+  .corpo { padding: 30px 28px 34px; }
+
+  .campo { margin-bottom: 18px; }
+  .campo label { display: block; font-size: 13px; color: #0d47a1; font-weight: 600; margin-bottom: 7px; }
+  .campo input,
+  .campo textarea {
+    width: 100%;
+    padding: 13px 15px;
+    border: 2px solid #cfd8dc;
+    border-radius: 10px;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.25s, box-shadow 0.25s;
+    background: #f7fbff;
+    color: #102a43;
+  }
+  .campo textarea {
+    resize: vertical;
+    min-height: 120px;
+    line-height: 1.45;
+    font-size: 14px;
+  }
+  .campo input:focus,
+  .campo textarea:focus {
+    border-color: #1976d2;
+    box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.15);
+    background: #fff;
+  }
+  .campo .dica {
+    display: block;
+    margin-top: 6px;
+    font-size: 11px;
+    color: #78909c;
+  }
+
+  .campo-senha { position: relative; }
+  .campo-senha input { padding-right: 48px; }
+  .olho {
+    position: absolute; right: 12px; bottom: 12px; width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; color: #607d8b; font-size: 18px;
+  }
+
+  .botao {
+    width: 100%;
+    padding: 14px;
+    margin-top: 8px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #0d47a1, #2196f3);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.25s;
+    box-shadow: 0 6px 18px rgba(13, 71, 161, 0.35);
+  }
+  .botao:hover { filter: brightness(1.08); }
+  .botao:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .botao-secundario {
+    background: #78909c;
+    margin-top: 10px;
+    box-shadow: 0 4px 12px rgba(120, 144, 156, 0.35);
+  }
+
+  .mensagem {
+    margin-top: 16px; text-align: center; font-size: 14px; font-weight: 600; min-height: 20px;
+  }
+  .mensagem.erro { color: #d32f2f; }
+  .mensagem.sucesso { color: #2e7d32; }
+
+  .links-uteis {
+    margin-top: 15px; text-align: center; font-size: 13px;
+  }
+  .links-uteis a { color: #1976d2; text-decoration: none; cursor: pointer; font-weight: 600; }
+  .links-uteis a:hover { text-decoration: underline; }
+
+  .rodape { text-align: center; font-size: 12px; color: #78909c; padding: 0 20px 22px; }
+
+  @media (max-width: 950px) { .coluna-efeitos { display: none; } }
+</style>
+</head>
+<body>
+
+  <div class="fundo-tracos">
+    <div class="grid-linhas"></div>
+    <div class="traco" style="top: 15%; animation-delay: 0s;"></div>
+    <div class="traco" style="top: 35%; animation-delay: 2s; width: 450px;"></div>
+    <div class="traco" style="top: 65%; animation-delay: 4s; width: 250px;"></div>
+    <div class="traco" style="top: 85%; animation-delay: 1s; width: 380px;"></div>
+  </div>
+
+  <div class="layout-geral">
+    <div class="coluna-efeitos" id="colunaEsquerda"></div>
+
+    <div class="caixa-login">
+      <div class="topo">
+        <div class="icone" id="iconeTopo">🔐</div>
+        <h1 id="tituloTopo">CENTRAL DE ACESSO CDF</h1>
+        <p id="subTopo">Acesso restrito — informe suas credenciais</p>
+      </div>
+
+      <div class="corpo" id="conteudoDinamico">
+        <!-- TELA 1: LOGIN NORMAL -->
+        <div id="telaLogin">
+          <div class="campo">
+            <label for="usuario">USUÁRIO / E-MAIL</label>
+            <input type="text" id="usuario" placeholder="Digite seu usuário ou e-mail" autocomplete="username">
+          </div>
+
+          <div class="campo campo-senha">
+            <label for="senha">SENHA</label>
+            <input type="password" id="senha" placeholder="Digite sua senha" autocomplete="current-password">
+            <span class="olho" id="olho" onclick="mostrarSenha('senha', 'olho')">👁</span>
+          </div>
+
+          <button class="botao" onclick="entrar()">ENTRAR</button>
+          
+          <div class="links-uteis">
+            <a onclick="irParaRecuperacao()">Esqueceu a senha / Solicitar Acesso?</a>
+          </div>
+
+          <div class="mensagem" id="mensagem"></div>
+        </div>
+
+        <!-- TELA 2: TROCA OBRIGATÓRIA DE SENHA PROVISÓRIA -->
+        <div id="telaTrocaSenha" style="display: none;">
+          <p style="font-size: 13px; color: #37474f; margin-bottom: 15px; text-align: center;">
+            Detectamos o uso de uma <b>senha provisória</b>. Por segurança, defina sua nova senha definitiva abaixo:
+          </p>
+          <div class="campo campo-senha">
+            <label for="novaSenha">NOVA SENHA DEFINITIVA</label>
+            <input type="password" id="novaSenha" placeholder="Mínimo de 6 caracteres">
+            <span class="olho" id="olhoNova" onclick="mostrarSenha('novaSenha', 'olhoNova')">👁</span>
+          </div>
+
+          <div class="campo campo-senha">
+            <label for="confirmaSenha">CONFIRMAR NOVA SENHA</label>
+            <input type="password" id="confirmaSenha" placeholder="Repita a nova senha">
+            <span class="olho" id="olhoConfirma" onclick="mostrarSenha('confirmaSenha', 'olhoConfirma')">👁</span>
+          </div>
+
+          <button class="botao" onclick="salvarNovaSenha()">CADASTRAR E ENTRAR</button>
+          <div class="mensagem" id="mensagemTroca"></div>
+        </div>
+
+        <!-- TELA 3: SOLICITAR / RECUPERAR ACESSO DIRETO AO FORMSPREE -->
+        <div id="telaRecuperacao" style="display: none;">
+          <p style="font-size: 13px; color: #37474f; margin-bottom: 15px; text-align: center;">
+            Informe seu e-mail ou nome e conte um pouco sobre você para solicitar o acesso ao administrador.
+          </p>
+
+          <form id="formSolicitacao" action="https://formspree.io/f/mjyydzeg" method="POST" onsubmit="enviarSolicitacaoFormspree(event)">
+            <!-- Assunto do e-mail que o administrador vai receber -->
+            <input type="hidden" name="_subject" value="Nova solicitação de acesso - Central CDF">
+
+            <div class="campo">
+              <label for="emailSolicitante">SEU E-MAIL / NOME</label>
+              <input type="text" id="emailSolicitante" name="email_ou_nome" placeholder="Ex: seu.email@escola.ba.gov.br" required>
+            </div>
+
+            <div class="campo">
+              <label for="infoSolicitante">INFORMAÇÕES SOBRE VOCÊ</label>
+              <textarea id="infoSolicitante" name="mensagem" maxlength="1000" required
+                placeholder="Ex: Eu sou [seu nome completo"></textarea>
+              <span class="dica">Descreva quem você é, seu cargo, unidade e o motivo do pedido de acesso.</span>
+            </div>
+
+            <button type="submit" class="botao" id="btnEnviar">ENVIAR SOLICITAÇÃO</button>
+          </form>
+
+          <button class="botao botao-secundario" onclick="voltarLogin()">VOLTAR AO LOGIN</button>
+          <div class="mensagem" id="mensagemRecup"></div>
+        </div>
+      </div>
+
+      <div class="rodape">© Central de Acesso CDF</div>
+    </div>
+
+    <div class="coluna-efeitos" id="colunaDireita"></div>
+  </div>
+
+<script>
+// ============================================================
+// CONFIGURAÇÃO DO SUPABASE
+// ============================================================
+const SUPABASE_URL = "https://vsubudeifwpdzxwoayij.supabase.co";
+const SUPABASE_KEY = "sb_publishable_vrBHcx43pZg3MWhYv8Wl-w_hd09KwTP";
+
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Função de ofuscação/criptografia da senha para o banco de dados
+function criptografarSenha(senhaPura) {
+  return btoa(encodeURIComponent(senhaPura));
+}
+
+// ============================================================
+// RECURSOS E ANIMAÇÕES VISUAIS
+// ============================================================
+const RECURSOS_SISTEMA = [
+  { nome: "Banco do Brasil", acao: "Financeiro", corFonte: "#69f0ae", corSub: "#b9f6ca", icone: "🏛️", lado: "esq", top: "8%", left: "5%" },
+  { nome: "Sistema SEI", acao: "Processos", corFonte: "#a7ffeb", corSub: "#e0f2f1", icone: "💳", lado: "esq", top: "32%", left: "30%" },
+  { nome: "ContEdu", acao: "Prestação de Contas", corFonte: "#80d8ff", corSub: "#81d4fa", icone: "🎓", lado: "dir", top: "12%", left: "12%" },
+  { nome: "Sistema Escolar", acao: "Acadêmico", corFonte: "#84ffff", corSub: "#b2ebf2", icone: "🏫", lado: "dir", top: "58%", left: "35%" },
+  { nome: "Gerar nota técnica", acao: "Gabinete", corFonte: "#ffe57f", corSub: "#fff8e1", icone: "📋", lado: "esq", top: "55%", left: "8%" },
+  { nome: "Limite PNAE", acao: "Cartão PNAE", corFonte: "#ffd180", corSub: "#ffe0b2", icone: "💳", lado: "dir", top: "35%", left: "5%" },
+  { nome: "Limite FAED", acao: "Cartão FAED", corFonte: "#ffab40", corSub: "#ffcc80", icone: "💳", lado: "esq", top: "78%", left: "28%" },
+  { nome: "Limite Manutenção", acao: "Cartão Manutenção", corFonte: "#ea80fc", corSub: "#f3e5f5", icone: "💳", lado: "dir", top: "78%", left: "20%" },
+  { nome: "Gerar Cadastro PNAE", acao: "Cadastro PNAE", corFonte: "#ff80ab", corSub: "#f8bbd0", icone: "📅", lado: "esq", top: "20%", left: "18%" },
+  { nome: "Gerar Planilha Empenho", acao: "Gerar Planilha", corFonte: "#84ffff", corSub: "#e0f7fa", icone: "🥞", lado: "dir", top: "22%", left: "30%" },
+  { nome: "Painel Analisar Dados", acao: "Comparar Planilha", corFonte: "#64ffda", corSub: "#b9f6ca", icone: "📊", lado: "esq", top: "42%", left: "25%" },
+  { nome: "Painel-Deshboard", acao: "Analise de Dados", corFonte: "#ff8a80", corSub: "#ffcdd2", icone: "📑", lado: "esq", top: "68%", left: "30%" },
+  { nome: "Analisar Emenda", acao: "Acompanhamento", corFonte: "#cfd8dc", corSub: "#eceff1", icone: "📝", lado: "dir", top: "68%", left: "5%" },
+  { nome: "Consultar Saldo Cartão", acao: "Saldo Cartão", corFonte: "#80cbc4", corSub: "#e0f2f1", icone: "🏢", lado: "esq", top: "15%", left: "8%" },
+  { nome: "Malote entrega de cartão", acao: "Malote Entrega", corFonte: "#8c9eff", corSub: "#c5cae9", icone: "💻", lado: "dir", top: "5%", left: "35%" }
+];
+
+function montarTextosFlutuantes() {
+  const colunaEsq = document.getElementById("colunaEsquerda");
+  const colunaDir = document.getElementById("colunaDireita");
+  let htmlEsq = "", htmlDir = "";
+
+  RECURSOS_SISTEMA.forEach((item, index) => {
+    const delay = (index * 0.55).toFixed(2);
+    const itemHTML = `
+      <div class="item-texto-flutuante" style="top: ${item.top}; left: ${item.left}; animation-delay: ${delay}s;">
+        <div class="cabecalho-texto" style="color: ${item.corFonte};">
+          <span>${item.icone}</span>
+          <span>${item.nome}</span>
+        </div>
+        <div class="sub-texto" style="color: ${item.corSub};">${item.acao}</div>
+      </div>
+    `;
+    if (item.lado === "esq") htmlEsq += itemHTML; else htmlDir += itemHTML;
+  });
+
+  colunaEsq.innerHTML = htmlEsq;
+  colunaDir.innerHTML = htmlDir;
+}
+
+document.addEventListener("DOMContentLoaded", montarTextosFlutuantes);
+
+let usuarioLogadoId = null;
+const URL_PAINEL_PADRAO = "https://devfjss.github.io/tela-nova-central/";
+
+function mostrarSenha(idInput, idOlho) {
+  const campo = document.getElementById(idInput);
+  const olho = document.getElementById(idOlho);
+  if (campo.type === "password") {
+    campo.type = "text";
+    olho.textContent = "🙈";
+  } else {
+    campo.type = "password";
+    olho.textContent = "👁";
+  }
+}
+
+// ============================================================
+// LÓGICA DE LOGIN COM CONSULTA NO SUPABASE
+// ============================================================
+async function entrar() {
+  const usuarioDigitado = document.getElementById("usuario").value.trim();
+  const senhaDigitada   = document.getElementById("senha").value.trim();
+  const msg = document.getElementById("mensagem");
+
+  msg.className = "mensagem";
+  msg.textContent = "";
+
+  if (!usuarioDigitado || !senhaDigitada) {
+    msg.classList.add("erro");
+    msg.textContent = "Preencha usuário e senha.";
+    return;
+  }
+
+  msg.textContent = "Validando acesso...";
+
+  try {
+    const { data, error } = await _supabase
+      .from('usuarios')
+      .select('*')
+      .or(`nome_usuario.eq.${usuarioDigitado},email.eq.${usuarioDigitado}`);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      msg.className = "mensagem erro";
+      msg.textContent = "Usuário não encontrado.";
+      return;
+    }
+
+    const user = data[0];
+    const senhaDigitadaHash = criptografarSenha(senhaDigitada);
+
+    // Valida a senha comparando os hashes ofuscados
+    if (user.senha !== senhaDigitada && user.senha !== senhaDigitadaHash) {
+      msg.className = "mensagem erro";
+      msg.textContent = "Senha inválida.";
+      return;
+    }
+
+    usuarioLogadoId = user.id;
+
+    // Se for senha provisória, obriga a redefinição
+    if (user.provisoria === true) {
+      abrirTelaTrocaSenha();
+      return;
+    }
+
+    concederAcessoRedirecionar();
+
+  } catch (err) {
+    console.error(err);
+    msg.className = "mensagem erro";
+    msg.textContent = "Erro ao conectar com o banco de dados.";
+  }
+}
+
+function concederAcessoRedirecionar() {
+  localStorage.setItem("cdf_autenticado", "true");
+  localStorage.setItem("usuarioLogado", "true");
+
+  const msg = document.getElementById("mensagem") || document.getElementById("mensagemTroca");
+  msg.className = "mensagem sucesso";
+  msg.textContent = "Acesso liberado! Redirecionando...";
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const redirectParam = urlParams.get('redirect');
+  const destinoFinal = redirectParam ? decodeURIComponent(redirectParam) : URL_PAINEL_PADRAO;
+
+  setTimeout(() => {
+    window.location.href = destinoFinal;
+  }, 900);
+}
+
+function abrirTelaTrocaSenha() {
+  document.getElementById("telaLogin").style.display = "none";
+  document.getElementById("telaRecuperacao").style.display = "none";
+  document.getElementById("telaTrocaSenha").style.display = "block";
+  document.getElementById("iconeTopo").textContent = "🔑";
+  document.getElementById("tituloTopo").textContent = "PRIMEIRO ACESSO";
+  document.getElementById("subTopo").textContent = "Alteração de senha provisória";
+}
+
+// ============================================================
+// SALVA A NOVA SENHA CRIPTOGRAFADA NO SUPABASE
+// ============================================================
+async function salvarNovaSenha() {
+  const novaSenha = document.getElementById("novaSenha").value.trim();
+  const confirmaSenha = document.getElementById("confirmaSenha").value.trim();
+  const msg = document.getElementById("mensagemTroca");
+
+  msg.className = "mensagem";
+  msg.textContent = "";
+
+  if (novaSenha.length < 6) {
+    msg.classList.add("erro");
+    msg.textContent = "A senha deve ter pelo menos 6 caracteres.";
+    return;
+  }
+
+  if (novaSenha !== confirmaSenha) {
+    msg.classList.add("erro");
+    msg.textContent = "As senhas não coincidem. Verifique e tente novamente.";
+    return;
+  }
+
+  msg.textContent = "Salvando nova senha no banco de dados...";
+
+  try {
+    const senhaHash = criptografarSenha(novaSenha);
+
+    const { error } = await _supabase
+      .from('usuarios')
+      .update({ senha: senhaHash, provisoria: false })
+      .eq('id', usuarioLogadoId);
+
+    if (error) throw error;
+
+    msg.className = "mensagem sucesso";
+    msg.textContent = "Senha cadastrada com sucesso! Entrando no sistema...";
+
+    setTimeout(() => {
+      concederAcessoRedirecionar();
+    }, 1200);
+
+  } catch (err) {
+    console.error(err);
+    msg.className = "mensagem erro";
+    msg.textContent = "Erro ao atualizar a senha no banco.";
+  }
+}
+
+function irParaRecuperacao() {
+  document.getElementById("telaLogin").style.display = "none";
+  document.getElementById("telaTrocaSenha").style.display = "none";
+  document.getElementById("telaRecuperacao").style.display = "block";
+  document.getElementById("iconeTopo").textContent = "📧";
+  document.getElementById("tituloTopo").textContent = "SOLICITAR ACESSO";
+  document.getElementById("subTopo").textContent = "Envio de credenciais";
+}
+
+function voltarLogin() {
+  document.getElementById("telaRecuperacao").style.display = "none";
+  document.getElementById("telaTrocaSenha").style.display = "none";
+  document.getElementById("telaLogin").style.display = "block";
+  document.getElementById("iconeTopo").textContent = "🔐";
+  document.getElementById("tituloTopo").textContent = "CENTRAL DE ACESSO CDF";
+  document.getElementById("subTopo").textContent = "Acesso restrito — informe suas credenciais";
+}
+
+// ============================================================
+// ENVIO DA SOLICITAÇÃO (e-mail/nome + informações) AO FORMSPREE
+// ============================================================
+async function enviarSolicitacaoFormspree(event) {
+  event.preventDefault();
+  const form = event.target;
+  const msg = document.getElementById("mensagemRecup");
+  const btn = document.getElementById("btnEnviar");
+
+  msg.className = "mensagem";
+  msg.textContent = "Enviando solicitação...";
+  btn.disabled = true;
+
+  try {
+    const response = await fetch(form.action, {
+      method: "POST",
+      body: new FormData(form),
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (response.ok) {
+      msg.className = "mensagem sucesso";
+      msg.textContent = "Solicitação enviada com sucesso para o administrador!";
+      form.reset();
+    } else {
+      throw new Error("Erro ao enviar");
+    }
+  } catch (error) {
+    msg.className = "mensagem erro";
+    msg.textContent = "Ocorreu um erro ao enviar. Tente novamente.";
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Enter") {
+    // No campo de informações (textarea) o Enter deve só pular linha
+    if (e.target && e.target.tagName === "TEXTAREA") return;
+    if (document.getElementById("telaLogin").style.display !== "none") entrar();
+    else if (document.getElementById("telaTrocaSenha").style.display !== "none") salvarNovaSenha();
+  }
+});
+</script>
+
+</body>
+</html>
